@@ -1,0 +1,160 @@
+import java.util.Random;
+
+public class RoundRobin {
+
+	public static void roundRobin(String p[], int a[], int s[], int q) {
+
+		int avgWaitTime = 0; // average times
+		int avgCompTime = 0;
+		int time = 0; // System Time
+
+//		int[] startTime = new int[a.length];
+//		int[] start = new int[a.length];
+
+		int[] turnTime = new int[a.length];
+
+		String seq = ""; // Round Robin sequence storage
+
+		int[] service = new int[s.length]; // initial service times
+		int[] wait = new int[a.length]; // initial arrival times
+
+		for (int i = 0; i < service.length; i++) { // copy the service array and arrival array
+			service[i] = s[i];
+			wait[i] = a[i];
+//			start[i] = a[i];
+		}
+
+		int[] w = new int[p.length]; // wait time
+		int[] comp = new int[p.length]; // Completion time
+
+		while (true) {
+			boolean flag = true;
+			for (int i = 0; i < p.length; i++) {
+
+				if (wait[i] <= time) { // if wait times are lower than system time
+					if (wait[i] <= q) { // if wait times are lower than quantum
+						if (service[i] > 0) { // check if service is not 0
+							flag = false;
+							if (service[i] > q) { // if service times are greater than quantum
+													// go to next process
+								time = time + q; // Time + quantum
+								service[i] = service[i] - q; // service times - quantum
+								wait[i] = wait[i] + q; // increase wait time by quantum
+								seq = seq.concat(p[i] + "->");
+
+							} else {
+
+								time = time + service[i];
+								comp[i] = time - a[i]; // store comp time
+								w[i] = time - s[i] - a[i]; // store wait time
+								service[i] = 0;
+								seq = seq.concat(p[i] + "->"); // add sequence
+							}
+						}
+					} else if (wait[i] > q) { // if wait times are greater than quantum
+
+						for (int j = 0; j < p.length; j++) {
+
+							if (wait[j] < wait[i]) { // comparing arrival times
+								if (service[j] > 0) {
+									flag = false;
+									if (service[j] > q) { // when service is higher than quantum
+										time = time + q; // service times - q and arrival + q
+										service[j] = service[j] - q;
+										wait[j] = wait[j] + q;
+										seq = seq.concat(p[j] + "->");
+									} else {
+										time = time + service[j]; // time + service time to end service if
+										comp[j] = time - a[j]; // time < service
+										w[j] = time - s[j] - a[j];
+										service[j] = 0;
+										seq = seq.concat(p[j] + "->");
+									}
+								}
+							}
+						}
+
+						if (service[i] > 0) {
+							flag = false;
+
+							if (service[i] > q) { // Check for greater service time
+								time = time + q; // time + quantum
+								service[i] = service[i] - q;
+								wait[i] = wait[i] + q; // wait times increment by quantum
+								seq = seq.concat(p[i] + "->");
+							} else {
+								time = time + service[i]; // time increments by remaining service times
+								comp[i] = time - a[i]; // completion time = time - arrival
+								w[i] = time - s[i] - a[i]; // total wait = time - service - arrival
+								service[i] = 0;
+								seq = seq.concat(p[i] + "->");
+							}
+						}
+					}
+				}
+
+				else if (wait[i] > time) { // if wait times is higher than time
+					time++; // add time and go backwards
+					i--;
+				}
+			}
+			if (flag) {
+				break; // Break the while loop when finished
+			}
+		}
+
+		System.out.println("Processes  End time  Initial Wait  Total Wait time  Turn around Time");
+
+		for (int i = 0; i < p.length; i++) {
+			turnTime[i] = comp[i] - a[i];
+			System.out.println("" + p[i] + "\t\t" + comp[i] + "\t " + a[i] + "\t\t" + w[i] + "\t\t" + turnTime[i]);
+
+			avgWaitTime = avgWaitTime + w[i];
+			avgCompTime = avgCompTime + comp[i];
+			// System.out.println("start" + startTime[i]);
+		}
+
+		System.out.println("\nAverage wait time: " + avgWaitTime / p.length);
+		System.out.println("Average service time: " + avgCompTime / p.length);
+		System.out.println("Round Robin Sequence: " + seq);
+
+	}
+
+	@SuppressWarnings("unused")
+	public static void main(String args[]) {
+
+		String[] processes = new String[100];
+		int[] waitTime = new int[100];
+		int[] serviceTime = new int[100];
+		int[] interArrival = new int[100];
+
+		waitTime[0] = 0; // starting wait time is 0
+
+		for (int i = 0; i < 100; i++) {
+			processes[i] = "p" + (i + 1);
+
+			int serviceRand = (int) (Math.random() * (5 - 2) + 2); // random numbers 2-5
+			int interArrivalRand = (int) (Math.random() * (8 - 4) + 4); // random numbers 4-8
+
+			serviceTime[i] = serviceRand; // inputting random numbers
+			interArrival[i] = interArrivalRand;
+		}
+
+		for (int i = 1; i < 99; i++) {
+			waitTime[i] = interArrival[i] + interArrival[i + 1]; // outputting Inter-Arrival times
+			System.out.println(
+					"InterArrival times for: " + (i) + "_" + (i + 1) + " = " + (interArrival[i] + interArrival[i + 1]));
+		}
+		waitTime[99] = interArrival[98] + interArrival[99];
+		System.out.println("InterArrival times for: 99_100 = " + waitTime[99]);
+		int quantum = 15;
+		final int CONTEXT_SWITCH = 0;
+
+		if (CONTEXT_SWITCH > 0) {
+			quantum = CONTEXT_SWITCH;
+		}
+
+		System.out.println("");
+		roundRobin(processes, waitTime, serviceTime, quantum);
+	}
+}
